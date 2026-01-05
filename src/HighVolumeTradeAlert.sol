@@ -9,7 +9,11 @@ interface IERC20 {
 
 contract HighVolumeTradeAlert is ITrap {
     address public constant TOKEN = 0xFba1bc0E3d54D71Ba55da7C03c7f63D4641921B1;
-    address public constant POOL  = 0x0000000000000000000000000000000000000000;
+    address public immutable POOL;
+
+constructor(address pool) {
+    POOL = pool;
+}
 
     struct CollectOutput {
         uint256 tradeVolume;
