@@ -22,12 +22,39 @@ contract HighVolumeTradeAlert is ITrap {
         return abi.encode(CollectOutput({tradeVolume: volume}));
     }
 
-    function shouldRespond(bytes[] calldata data) external pure override returns (bool, bytes memory) {
-        CollectOutput memory current = abi.decode(data[0], (CollectOutput));
-        CollectOutput memory past = abi.decode(data[data.length - 1], (CollectOutput));
-        if (past.tradeVolume == 0) return (false, bytes(""));
-        uint256 change = current.tradeVolume > past.tradeVolume ? current.tradeVolume - past.tradeVolume : past.tradeVolume - current.tradeVolume;
-        if (change > 1e18) return (true, bytes(""));
-        return (false, bytes(""));
+    function shouldRespond(bytes[] calldata data)
+    external
+    pure
+    override
+    returns (bool, bytes memory)
+{
+    // 🔐 Planner-safety guard — MUST be first
+    if (
+        data.length < 2 ||
+        data[0].length == 0 ||
+        data[data.length - 1].length == 0
+    ) {
+        return (false, "");
     }
+
+    CollectOutput memory current = abi.decode(data[0], (CollectOutput));
+    CollectOutput memory past =
+        abi.decode(data[data.length - 1], (CollectOutput));
+
+    if (past.tradeVolume == 0) {
+        return (false, "");
+    }
+
+    uint256 change = current.tradeVolume > past.tradeVolume
+        ? current.tradeVolume - past.tradeVolume
+        : past.tradeVolume - current.tradeVolume;
+
+    // 🔁 ABI FIX: return encoded uint256 (not empty bytes)
+    if (change > 1e18) {
+        return (true, abi.encode(change));
+    }
+
+    return (false, "");
+}
+
 }
