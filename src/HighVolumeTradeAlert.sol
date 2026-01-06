@@ -8,69 +8,58 @@ interface IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract HighVolumeTradeAlert is ITrap {
-    address public constant TOKEN = 0xFba1bc0E3d54D71Ba55da7C03c7f63D4641921B1;
-    address public immutable POOL;
+import {Trap} from "drosera-contracts/Trap.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 
-constructor(address pool) {
-    POOL = pool;
-}
+contract HighVolumeTradeAlert is Trap {
+
+    address public immutable TOKEN;
+    address public immutable POOL;
 
     struct CollectOutput {
         uint256 tradeVolume;
+        uint256 blockNumber;
     }
 
-    constructor() {}
+    constructor(address token, address pool) {
+        TOKEN = token;
+        POOL  = pool;
 
- function collect() external view override returns (bytes memory) {
-    IERC20 token = IERC20(TOKEN);
-
-    uint256 raw = token.balanceOf(POOL);
-    uint8 dec = token.decimals();
-
-    // scale to 18 decimals style
-    uint256 scaled = dec < 18
-        ? raw * (10 ** (18 - dec))
-        : raw / (10 ** (dec - 18));
-
-    return abi.encode(
-        CollectOutput({ tradeVolume: scaled })
-    );
-}
-
-    function shouldRespond(bytes[] calldata data)
-    external
-    pure
-    override
-    returns (bool, bytes memory)
-{
-    // 🔐 Planner-safety guard — MUST be first
-    if (
-        data.length < 2 ||
-        data[0].length == 0 ||
-        data[data.length - 1].length == 0
-    ) {
-        return (false, "");
+        _addEventFilter(
+            address(TOKEN),
+            IERC20.Transfer.selector
+        );
     }
 
-    CollectOutput memory current = abi.decode(data[0], (CollectOutput));
-    CollectOutput memory past =
-        abi.decode(data[data.length - 1], (CollectOutput));
+    function collect()
+        external
+        view
+        override
+        returns (bytes memory)
+    {
+        uint256 sum = 0;
 
-    if (past.tradeVolume == 0) {
-        return (false, "");
+        Trap.Log[] memory logs =
+            getFilteredLogs();
+
+        for (uint256 i = 0; i < logs.length; i++) {
+
+            (address from, address to, uint256 value) =
+                abi.decode(
+                    logs[i].data,
+                    (address,address,uint256)
+                );
+
+            if (from == POOL || to == POOL) {
+                sum += value;
+            }
+        }
+
+        return abi.encode(
+            CollectOutput({
+                tradeVolume: sum,
+                blockNumber: block.number
+            })
+        );
     }
-
-    uint256 change = current.tradeVolume > past.tradeVolume
-        ? current.tradeVolume - past.tradeVolume
-        : past.tradeVolume - current.tradeVolume;
-
-    // 🔁 ABI FIX: return encoded uint256 (not empty bytes)
-    if (change > 1e18) {
-        return (true, abi.encode(change));
-    }
-
-    return (false, "");
-}
-
 }
