@@ -40,3 +40,16 @@ function shouldRespond(bytes[] calldata data) external pure override returns (bo
 * **Deterministic Logic:** The logic is executed off-chain by operators to achieve consensus before a transaction is proposed.
 * **Calculation/Thresholds:** Uses a fixed 1 token volume threshold that triggers responses when breached.
 * **Response Mechanism:** On trigger, the trap calls the external Responder contract, demonstrating the separation of monitoring and action.
+
+### Resolved Issues
+
+- ABI mismatch: shouldRespond now returns abi.encode(change) to match respondCallback(uint256).
+- Planner safety: Added guard for empty blobs before abi.decode.
+- POOL configuration: Removed hardcoded address(0); pool is now provided via constructor.
+
+### Remaining Improvements
+
+- Decimal scaling is not yet implemented; current threshold assumes 18 decimals.
+- True trade volume should be event-based using Transfer logs and Drosera EventFilter.
+- Import path should follow Foundry remappings with drosera-contracts/=lib/drosera-contracts/src/.
+
