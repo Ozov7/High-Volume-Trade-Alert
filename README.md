@@ -1,55 +1,51 @@
 # HighVolumeTradeAlert (Drosera Proof-of-Concept)
 
 ## Overview
-// This trap monitors high volume trade in in a specified pool and triggers alerts when the there is a high volume trade above a threshold. This is essential for maintaining market stability.
+This trap monitors high-volume trades in a specified pool and triggers alerts when there is a trade above a threshold.  
+It demonstrates a Drosera trap pattern for maintaining market stability by detecting spikes in token flow.
 
 ---
 
 ## What It Does
-* Monitors trading volumes in a specified pool.
-* Triggers if the volume goes above 1 token.
-* It demonstrates the essential Drosera trap pattern using deterministic logic.
+* Monitors **actual token transfers** in a specified pool using ERC20 Transfer events.
+* Triggers if trade volume goes above a defined threshold (scaled to 18 decimals).
+* Implements **planner safety** with empty-blob guards.
+* Uses a constructor to configure POOL and TOKEN addresses instead of hardcoded values.
+* Demonstrates Drosera trap pattern: separation of monitoring and response logic.
 
 ---
 
 ## Key Files
-* `src/HighVolumeTradeAlert.sol` - The core trap contract containing the monitoring logic.
+* `src/HighVolumeTradeAlert.sol` - The core trap contract containing the monitoring logic, decimals scaling, and event-based trade volume detection.
 * `src/SimpleResponder.sol` - The required external response contract.
-* `drosera.toml` - The deployment and configuration file.
+* `drosera.toml` - Deployment and configuration file with Foundry remappings for Drosera contracts.
 
 ---
 
 ## Detection Logic
 
-The trap's core monitoring logic is contained in the deterministic `shouldRespond()` function.
+The trap's core monitoring logic is in `shouldRespond()`. It compares the current and past trade volume and triggers when the change exceeds the threshold.
 
-solidity
-// The AI MUST insert the full, syntax-highlighted Solidity code of the `shouldRespond()` logic here.
+```solidity
 function shouldRespond(bytes[] calldata data) external pure override returns (bool, bytes memory) {
+    // 🔐 Planner-safety guard
+    if (data.length < 2 || data[0].length == 0 || data[data.length - 1].length == 0) {
+        return (false, "");
+    }
+
     CollectOutput memory current = abi.decode(data[0], (CollectOutput));
     CollectOutput memory past = abi.decode(data[data.length - 1], (CollectOutput));
-    if (past.tokenBalance < THRESHOLD) return (true, bytes(""));
-    return (false, bytes(""));
+
+    if (past.tradeVolume == 0) return (false, "");
+
+    uint256 change = current.tradeVolume > past.tradeVolume
+        ? current.tradeVolume - past.tradeVolume
+        : past.tradeVolume - current.tradeVolume;
+
+    // 🔁 ABI-safe return
+    if (change > 1e18) {
+        return (true, abi.encode(change));
+    }
+
+    return (false, "");
 }
- 
-
----
-
-## 🧪 Implementation Details and Key Concepts
-* **Monitoring Target:** Watching the volume in the specified pool at address 0x0000000000000000000000000000000000000000 and the Dex token 0xFba1bc0E3d54D71Ba55da7C03c7f63D4641921B1.
-* **Deterministic Logic:** The logic is executed off-chain by operators to achieve consensus before a transaction is proposed.
-* **Calculation/Thresholds:** Uses a fixed 1 token volume threshold that triggers responses when breached.
-* **Response Mechanism:** On trigger, the trap calls the external Responder contract, demonstrating the separation of monitoring and action.
-
-### Resolved Issues
-
-- ABI mismatch: shouldRespond now returns abi.encode(change) to match respondCallback(uint256).
-- Planner safety: Added guard for empty blobs before abi.decode.
-- POOL configuration: Removed hardcoded address(0); pool is now provided via constructor.
-
-### Remaining Improvements
-
-- Decimal scaling is not yet implemented; current threshold assumes 18 decimals.
-- True trade volume should be event-based using Transfer logs and Drosera EventFilter.
-- Import path should follow Foundry remappings with drosera-contracts/=lib/drosera-contracts/src/.
-
