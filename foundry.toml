@@ -7,10 +7,11 @@ libs = ['lib']
 solc = '0.8.20'
 
 # CRITICAL FIX: The remappings are essential for the import path
-remapping = [
-    'contracts/=lib/contracts/contracts/',
-    'forge-std/=lib/forge-std/src/'
+remappings = [
+"drosera-contracts/=lib/drosera-contracts/src/"
 ]
 
 [rpc_endpoints]
 hoodi = "https://rpc.hoodi.ethpandaops.io"
+
+forge install drosera-network/drosera-contracts
