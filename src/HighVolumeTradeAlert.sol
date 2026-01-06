@@ -6,6 +6,7 @@ import {ITrap} from "drosera-contracts/interfaces/ITrap.sol";
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
     function decimals() external view returns (uint8);
+    event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
 import {Trap} from "drosera-contracts/Trap.sol";
