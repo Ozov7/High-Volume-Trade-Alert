@@ -5,6 +5,7 @@ import "contracts/interfaces/ITrap.sol";
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
+    function decimals() external view returns (uint8);
 }
 
 contract HighVolumeTradeAlert is ITrap {
@@ -21,10 +22,21 @@ constructor(address pool) {
 
     constructor() {}
 
-    function collect() external view override returns (bytes memory) {
-        uint256 volume = IERC20(TOKEN).balanceOf(POOL);
-        return abi.encode(CollectOutput({tradeVolume: volume}));
-    }
+ function collect() external view override returns (bytes memory) {
+    IERC20 token = IERC20(TOKEN);
+
+    uint256 raw = token.balanceOf(POOL);
+    uint8 dec = token.decimals();
+
+    // scale to 18 decimals style
+    uint256 scaled = dec < 18
+        ? raw * (10 ** (18 - dec))
+        : raw / (10 ** (dec - 18));
+
+    return abi.encode(
+        CollectOutput({ tradeVolume: scaled })
+    );
+}
 
     function shouldRespond(bytes[] calldata data)
     external
