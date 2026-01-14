@@ -39,5 +39,3 @@ contract HighVolumeTradeAlertTest is Test {
         assertEq(out.tradeVolume, expected);
     }
 }
-
-forge test
