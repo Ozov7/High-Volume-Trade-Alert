@@ -13,5 +13,3 @@ remappings = [
 
 [rpc_endpoints]
 hoodi = "https://rpc.hoodi.ethpandaops.io"
-
-forge install drosera-network/drosera-contracts
