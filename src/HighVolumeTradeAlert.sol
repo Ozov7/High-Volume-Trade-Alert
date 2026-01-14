@@ -3,11 +3,16 @@ pragma solidity ^0.8.20;
 
 import {Trap} from "drosera-contracts/Trap.sol";
 
+interface IERC20Metadata {
+    function decimals() external view returns (uint8);
+}
+
 
 contract HighVolumeTradeAlert is Trap {
 
-    address public constant TOKEN = address(0);
-    address public constant POOL  = address(0);
+    address public constant TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
+    address public constant POOL  = 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc; // Uniswap V2 WETH/USDC
+    
     uint256 public constant VOLUME_THRESHOLD = 1_000 * 1e18;
     bytes32 public constant TRANSFER_TOPIC = keccak256("Transfer(address,address,uint256)");
 
