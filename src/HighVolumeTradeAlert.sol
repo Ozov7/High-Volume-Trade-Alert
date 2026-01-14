@@ -4,19 +4,11 @@ pragma solidity ^0.8.20;
 import {Trap} from "drosera-contracts/Trap.sol";
 
 
-// We don't need to import IERC20 since we're not calling ERC20 functions
-// Just define the Transfer event signature for filtering
-
-
 contract HighVolumeTradeAlert is Trap {
-    // Replace with your actual token and pool addresses
-    address public constant TOKEN = 0xYourTokenAddressHere;  // e.g., 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 (WETH)
-    address public constant POOL  = 0xYourPoolAddressHere;   // e.g., 0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852 (WETH/USDT)
-    
-    // Threshold: 1000 tokens (assuming 18 decimals)
+
+    address public constant TOKEN = address(0);
+    address public constant POOL  = address(0);
     uint256 public constant VOLUME_THRESHOLD = 1_000 * 1e18;
-    
-    // ERC20 Transfer event signature
     bytes32 public constant TRANSFER_TOPIC = keccak256("Transfer(address,address,uint256)");
 
     struct CollectOutput {
@@ -25,7 +17,6 @@ contract HighVolumeTradeAlert is Trap {
     }
 
     constructor() {
-        // Filter for Transfer events from the token
         _addEventFilter(TOKEN, TRANSFER_TOPIC);
     }
 
@@ -73,7 +64,7 @@ contract HighVolumeTradeAlert is Trap {
     function shouldRespond(
         bytes[] calldata data
     ) external pure override returns (bool, bytes memory) {
-        // 🔐 Planner-safety: guard against empty data
+        // Planner-safety: guard against empty data
         if (data.length < 1 || data[0].length == 0) {
             return (false, bytes(""));
         }
