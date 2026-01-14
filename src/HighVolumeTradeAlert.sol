@@ -81,7 +81,6 @@ contract HighVolumeTradeAlert is Trap {
         if (data.length > 1 && data[1].length > 0) {
             CollectOutput memory prev = abi.decode(data[1], (CollectOutput));
             
-            // If already above threshold last time, don't trigger again
             if (prev.tradeVolume >= VOLUME_THRESHOLD) {
                 return (false, bytes(""));
             }
